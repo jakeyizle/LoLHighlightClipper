@@ -1,0 +1,13 @@
+000000.000| ALWAYS| Logging started at 2020-06-14T12:15:22.950
+000000.089| ALWAYS|   CFG| CrashHandler(Bugsplat)
+000000.110| ALWAYS|   CFG| Command Line:  "C:\Users\Jakertle\Documents\League of Legends\Replays\NA1-3459666749.rofl" 
+000000.117| ALWAYS| Parent process: C:\Windows\System32\cmd.exe
+000000.165| ALWAYS| Wrote soft repair file to D:\Coding Projects\LeagueReplay2/../SOFT_REPAIR. This will cause the patcher to repair your installation.
+000000.171|  ERROR| Assertion failed!
+
+
+Expression: ALE-18967991
+
+Description: FATAL ERROR - Installation is corrupt. WadFile mount failed.
+ - WadFile: DATA/FINAL/Bootstrap.wad.client
+ - Problem: Missing
