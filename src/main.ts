@@ -75,16 +75,6 @@ app.on("activate", () => {
 //need the eventList (so we can find the events in the replay)
 //need the role or position (so we can focus on the correct champion)
 ipcMain.on('startReplay', (event,payload) => {  
-  var pythonChild =  new shell({
-    executionPolicy: 'Bypass',
-    noProfile: true
-  })
-  pythonChild.addCommand('cd "D:\\Coding Projects\\LeagueReplay2\\main"');
-  pythonChild.addCommand('& .\\main.exe "'+payload.matchId+'"');
-  pythonChild.invoke().then((pyoutput: any) => {
-    console.log("PY INVOKED!");
-    console.log(pyoutput);    
-  console.log(payload.matchId);
   var path = "\"D:\\Games\\League of Legends\\Game\\League of Legends.exe\" \"C:\\Users\\Jakertle\\Documents\\League of Legends\\Replays\\NA1-"+payload.matchId+".rofl\""
   //console.log(path);
 
@@ -102,35 +92,27 @@ pollUntilDone(500, 30* 1000).then((result: any) =>{
   mainWindow.webContents.send('replay-loaded');
   //replay api will return 200 but the client is lagging, so need to wait a couple of seconds before sending the camera focus keys
   msleep(3*1000);
-  //these need to be dynamic, based on role
-  //only way to focus camera, the replay API does not support camera-focusing
-  ks.sendKey('4');
-  ks.sendKey('4');
-  ks.sendKey('4');  
+  fetch('https://127.0.0.1:2999/liveclientdata/playerlist').then((response: any) => {
+    return response.json();
+  }).then((responseJson: any) => {
+    let playerPositions: PlayerPosition[] = responseJson;
+    let playerPosition: PlayerPosition = playerPositions.find(x=>x.summonerName==payload.summonerName);
 
-  getClips(payload.leagueEventTimes, 0).then((result:any) => {
-    console.log("end of getclips!");
-    //pretty sure league always uses port 2999. if not then this is fucked!
-    find('port', 2999).then((list:any) => {      
-    process.kill(list[0].pid);
-    mainWindow.webContents.send('next-replay');
-  })
-  })
-  })
+    //these need to be dynamic, based on role
+    //only way to focus camera, the replay API does not support camera-focusing
+    var hotkey = getCameraHotkey(playerPosition.position, playerPosition.team);    
 
-}).catch((err: any) => {
-  let regexp: RegExp =  /\{(.*?)\}/;
-  let positions:string = regexp.exec(err)[0]  
-  for (let i = 1; i < 11; i++) {
-    positions = positions.replace(i.toString(), '"'+i.toString()+'"');
-  }
-  let newRegExp: RegExp = /(')/g;
-  positions = positions.replace(newRegExp, '"');
-  console.log(JSON.parse(positions));
-  let jsonPos = JSON.parse(positions)
-  let test = '1';
-  console.log(jsonPos['1']);
-})
+    getClips(payload.leagueEventTimes, 0, hotkey).then((result:any) => {
+      console.log("end of getclips!");
+      //pretty sure league always uses port 2999. if not then this is fucked!
+      find('port', 2999).then((list:any) => {      
+      process.kill(list[0].pid);
+      mainWindow.webContents.send('next-replay');
+    })
+    })
+    })
+  })
+  
 })
 
 // In this file you can include the rest of your app"s specific main process
@@ -177,7 +159,7 @@ function msleep(n: any) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
 }
 
-function getClips(testEventArray: any, testIndex: any) { 
+function getClips(testEventArray: any, testIndex: any, hotkey:any) { 
   function test(eventArray:any, index:any) { 
   console.log("start of index = " + index);
   var data = { startTime: eventArray[index].startTime, endTime: eventArray[index].endTime, recording: true};
@@ -190,9 +172,9 @@ function getClips(testEventArray: any, testIndex: any) {
   //but we cant do it immediately, because sometimes the client is still loading the new time
   msleep(3*1000);
   //these need to be dynamic
-  ks.sendKey('4');
-  ks.sendKey('4');
-  ks.sendKey('4');  
+  ks.sendKey(hotkey);
+  ks.sendKey(hotkey);
+  ks.sendKey(hotkey);  
   console.log("before sleep at index = " + index);
   //this will need to be dynamic, based off the starttime/endtime
   msleep((eventArray[index].endTime - eventArray[index].startTime+2)*1000);
@@ -207,4 +189,51 @@ function getClips(testEventArray: any, testIndex: any) {
 })
   }
   return test(testEventArray, testIndex);
+}
+
+//order == blue
+//chaos == red
+
+function getCameraHotkey(role: string, teamId: string) {
+  let hotkey: string;
+  role = role.toLowerCase();
+  teamId = teamId.toLowerCase();
+  if (role == 'top') {
+    hotkey = '1';
+    if (teamId == 'chaos') {
+      hotkey = 'q';
+    }    
+  }
+  if (role == 'jungle') {
+    hotkey = '2';
+    if (teamId == 'chaos') {
+      hotkey = 'w';
+    }    
+  }
+  if (role == 'middle') {
+    hotkey = '3';
+    if (teamId == 'chaos') {
+      hotkey = 'e';
+    }    
+  }
+  if (role == 'bottom') {
+    hotkey = '4';
+    if (teamId == 'chaos') {
+      hotkey = 'r';
+    }    
+  }
+  if (role == 'utility') {
+    hotkey = '5';
+    if (teamId == 'chaos') {
+      hotkey = 't';
+    }    
+  }
+  return hotkey;
+}
+
+
+interface PlayerPosition {
+  position: string;
+  summonerName: string;
+  team: string;
 }

@@ -2,18 +2,30 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 const { ipcRenderer } = require('electron')
+const {dialog} = require('electron').remote;
+const fs = require('electron').remote.require('fs')
+const Store = require('electron-store');
+const store = new Store();
 
 var files: any;
 var fileNumber: number = 0;
+var leaguePath: string;
+var replayPath: string;
 
 function test() {
+    if (!validateForm()) {
+        console.log('invalid form');
+        console.log(leaguePath);
+        console.log(replayPath);
+        return;
+    }
     if (fileNumber == files.length) {
         return;
     }    
     let regexp: RegExp =  /\-(.*?)\./;
-    let matchId:String = regexp.exec(files[fileNumber])[1]
+    let matchId:string = regexp.exec(files[fileNumber])[1]
     console.log(matchId);
-    fetch(`https://na1.api.riotgames.com/lol/match/v4/matches/${matchId}?api_key=RGAPI-0b68439c-98fd-4685-882e-8a11fcbc16cd`)
+    fetch(`https://na1.api.riotgames.com/lol/match/v4/matches/${matchId}?api_key=RGAPI-1d0b3122-e8d1-42be-8216-7a1418321c93`)
     .then(response => {
         return response.json();
     })
@@ -37,7 +49,7 @@ function test() {
         console.log("teamId: " +teamId);
         console.log(champions);
 
-        fetch(`https://na1.api.riotgames.com/lol/match/v4/timelines/by-match/${matchId}?api_key=RGAPI-0b68439c-98fd-4685-882e-8a11fcbc16cd`)
+        fetch(`https://na1.api.riotgames.com/lol/match/v4/timelines/by-match/${matchId}?api_key=RGAPI-1d0b3122-e8d1-42be-8216-7a1418321c93`)
         .then(result => {
             return result.json();
         })
@@ -77,7 +89,7 @@ function test() {
             payload.matchId = matchId
             payload.teamId = teamId;
             payload.championIds = champions;
-            payload.userChampionId = userChampion;
+            payload.summonerName = me.player.summonerName;
             console.log(payload)
             ipcRenderer.send('startReplay', payload);
         })
@@ -103,6 +115,57 @@ function getParticipant(name: any, match: any) {
 }
 
 
+
+function setInstallPath() {
+    document.getElementById('leaguePath').innerText = (<HTMLInputElement>document.getElementById('leagueInstallPath')).files[0].path
+    leaguePath = (<HTMLInputElement>document.getElementById('leagueInstallPath')).files[0].path;
+}
+function setReplayPath() {
+    document.getElementById('replayPath').innerText = (<HTMLInputElement>document.getElementById('leagueReplayPath')).files[0].path
+    replayPath = document.getElementById('replayPath').innerText = (<HTMLInputElement>document.getElementById('leagueReplayPath')).files[0].path;
+}
+function clickFileDialog() {
+    document.getElementById('leagueInstallPath').click();
+}
+function clickReplayDialog() {
+    document.getElementById('leagueReplayPath').click();
+}
+function setLeagueConfig() {
+    var config:string = fs.readFileSync(leaguePath+'\\Game\\Data\\cfg\\game.cfg', 'utf8');
+    if (config.indexOf('EnableReplayApi=1') === -1) {
+        var newConfig = config.slice(0, 15) + 'EnableReplayApi=1\n' + config.slice(15);
+        fs.writeFileSync(leaguePath+'\\Game\\Data\\cfg\\game.cfg', newConfig);
+    }    
+}
+
+function validateForm() {
+    let valid = true;
+    if (!validateInstallPath()) {
+        valid = false;
+    }
+    if (!validateReplayPath()) {
+        valid = false;
+    }
+    if ((<HTMLInputElement>document.getElementById('summonerName')).value.length == 0) {
+        valid = false;
+        console.log(document.getElementById('summonerName').innerText);
+    }
+    return valid;
+}
+
+function validateInstallPath() {
+    if (!leaguePath) {
+        return false;
+    }
+    return  (fs.existsSync(leaguePath + '\\Game\\League of Legends.exe') && fs.existsSync(leaguePath + '\\Game\\Data\\cfg\\game.cfg'));         
+}
+
+function validateReplayPath() {
+    if (!replayPath) {
+        return false;
+    }
+    return  fs.readdirSync(replayPath).length > 0;
+}
 
 interface Player {
     platformId: string;
@@ -143,8 +206,8 @@ class LeagueEventTime {
 
 class Payload{
     leagueEventTimes: LeagueEventTime[];    
-    matchId: String;
+    matchId: string;
     championIds: number[];
-    userChampionId: number;
+    summonerName: string;
     teamId: number;
 }

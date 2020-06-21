@@ -1,17 +1,42 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
-
+const homedir = require('os').homedir();
 
 window.addEventListener("DOMContentLoaded", () => {
   const replaceText = (selector: string, text: string) => {
     const element = document.getElementById(selector);
     if (element) {
-      element.innerText = text;
+      (<HTMLInputElement>element).value = text;
     }
   };
-
-  for (const type of ["chrome", "node", "electron"]) {
-    replaceText(`${type}-version`, (process.versions as any)[type]);
+  if (initalizeLeaguePath()) {
+    document.getElementById('leaguePath').innerText = initalizeLeaguePath();
+    leaguePath = document.getElementById('leaguePath').innerText; 
+  }
+  if (initalizeReplayPath()) {
+    document.getElementById('replayPath').innerText = initalizeReplayPath();
+    replayPath = document.getElementById('replayPath').innerText;
   }
 });
 
+function initalizeLeaguePath() {
+  if (store.get('leagueInstallPath')) {    
+    return store.get('leagueInstallPath')
+  }
+  let possibleFilePaths = ['C:\\Program Files\\League of Legends', 'C:\\Program Files(x86)\\League of Legends', 'D:\\Program Files\\League of Legends', 'D:\\Program Files(x86)\\League of Legends']
+  possibleFilePaths.forEach(filePath => {
+    if(fs.existsSync(filePath+'/Game/League of Legends.exe')) {
+      return filePath;
+    }
+  });  
+}
+
+function initalizeReplayPath() {
+  if (store.get('leagueReplayPath')) {
+    console.log(store.get('leagueReplayPath'));
+    return store.get('leagueReplayPath');
+  }
+  if (fs.existsSync(homedir+'\\Documents\\League of Legends\\Replays')) {
+    return homedir+'\\Documents\\League of Legends\\Replays';
+  }
+}
