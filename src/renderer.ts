@@ -4,34 +4,46 @@
 const { ipcRenderer } = require('electron')
 const {dialog} = require('electron').remote;
 const fs = require('electron').remote.require('fs')
-const Store = require('electron-store');
-const store = new Store();
+
 
 var files: any;
 var fileNumber: number = 0;
 var leaguePath: string;
 var replayPath: string;
+var summonerName: string;
+var apiKey = 'RGAPI-be3eb45e-ab56-43d2-acab-4770324a97bc';
+function startReplayProcess() {
 
-function test() {
     if (!validateForm()) {
         console.log('invalid form');
         console.log(leaguePath);
         console.log(replayPath);
         return;
     }
+    leaguePath = document.getElementById('leaguePath').innerText;
+    replayPath = document.getElementById('replayPath').innerText;
+    summonerName = (<HTMLInputElement>document.getElementById('summonerName')).value;
+    files = fs.readdirSync(replayPath);
+    setLeagueConfig();
+
+    getMatchAndStartLeague();
+}
+
+function getMatchAndStartLeague() {
+    console.log(summonerName);
     if (fileNumber == files.length) {
         return;
     }    
     let regexp: RegExp =  /\-(.*?)\./;
     let matchId:string = regexp.exec(files[fileNumber])[1]
     console.log(matchId);
-    fetch(`https://na1.api.riotgames.com/lol/match/v4/matches/${matchId}?api_key=RGAPI-1d0b3122-e8d1-42be-8216-7a1418321c93`)
+    fetch(`https://na1.api.riotgames.com/lol/match/v4/matches/${matchId}?api_key=${apiKey}`)
     .then(response => {
         return response.json();
     })
     .then(match => {
         let array:Array<ParticipantIdentity> = match.participantIdentities;        
-        let me:any = array.find(x => x.player.summonerName == 'jakeyizle');
+        let me:any = array.find(x => x.player.summonerName == summonerName);
         console.log(me);
         let participantId = me.participantId;
         
@@ -49,7 +61,7 @@ function test() {
         console.log("teamId: " +teamId);
         console.log(champions);
 
-        fetch(`https://na1.api.riotgames.com/lol/match/v4/timelines/by-match/${matchId}?api_key=RGAPI-1d0b3122-e8d1-42be-8216-7a1418321c93`)
+        fetch(`https://na1.api.riotgames.com/lol/match/v4/timelines/by-match/${matchId}?api_key=${apiKey}`)
         .then(result => {
             return result.json();
         })
@@ -89,7 +101,9 @@ function test() {
             payload.matchId = matchId
             payload.teamId = teamId;
             payload.championIds = champions;
-            payload.summonerName = me.player.summonerName;
+            payload.summonerName = summonerName;
+            payload.leaguePath = leaguePath;
+            payload.replayPath = replayPath;
             console.log(payload)
             ipcRenderer.send('startReplay', payload);
         })
@@ -106,7 +120,7 @@ ipcRenderer.on('replay-loaded', (event, payload) => {
     console.log('replay loaded!');
 })
 ipcRenderer.on('next-replay', (event, payload) => {
-    test();
+    getMatchAndStartLeague();
 })
 function getParticipant(name: any, match: any) {
     return match.filter(
@@ -118,18 +132,20 @@ function getParticipant(name: any, match: any) {
 
 function setInstallPath() {
     document.getElementById('leaguePath').innerText = (<HTMLInputElement>document.getElementById('leagueInstallPath')).files[0].path
-    leaguePath = (<HTMLInputElement>document.getElementById('leagueInstallPath')).files[0].path;
 }
+
 function setReplayPath() {
     document.getElementById('replayPath').innerText = (<HTMLInputElement>document.getElementById('leagueReplayPath')).files[0].path
-    replayPath = document.getElementById('replayPath').innerText = (<HTMLInputElement>document.getElementById('leagueReplayPath')).files[0].path;
 }
+
 function clickFileDialog() {
     document.getElementById('leagueInstallPath').click();
 }
+
 function clickReplayDialog() {
     document.getElementById('leagueReplayPath').click();
 }
+
 function setLeagueConfig() {
     var config:string = fs.readFileSync(leaguePath+'\\Game\\Data\\cfg\\game.cfg', 'utf8');
     if (config.indexOf('EnableReplayApi=1') === -1) {
@@ -149,7 +165,7 @@ function validateForm() {
     if ((<HTMLInputElement>document.getElementById('summonerName')).value.length == 0) {
         valid = false;
         console.log(document.getElementById('summonerName').innerText);
-    }
+    }    
     return valid;
 }
 
@@ -210,4 +226,6 @@ class Payload{
     championIds: number[];
     summonerName: string;
     teamId: number;
+    leaguePath: string;
+    replayPath: string;
 }

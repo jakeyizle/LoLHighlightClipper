@@ -23,6 +23,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       preload: path.join(__dirname, "preload.js"),
+      webSecurity: false
     },
     width: 800,
   });
@@ -49,8 +50,6 @@ function createWindow() {
 app.on("ready", createWindow);
 app.whenReady().then(() => {
   mainWindow.webContents.on('did-finish-load', () => {
-    var files = fs.readdirSync(app.getPath('home')+'/Documents/League of Legends/Replays');
-    mainWindow.webContents.send('dir-name', files)
   })
 })
 // Quit when all windows are closed.
@@ -75,11 +74,16 @@ app.on("activate", () => {
 //need the eventList (so we can find the events in the replay)
 //need the role or position (so we can focus on the correct champion)
 ipcMain.on('startReplay', (event,payload) => {  
-  var path = "\"D:\\Games\\League of Legends\\Game\\League of Legends.exe\" \"C:\\Users\\Jakertle\\Documents\\League of Legends\\Replays\\NA1-"+payload.matchId+".rofl\""
-  //console.log(path);
+  console.log("start");
+
+  var path = "\"" + payload.leaguePath+"\\Game\\League of Legends.exe\" " + "\"" + payload.replayPath+ "\\NA1-"+payload.matchId+".rofl\"";
+  console.log(payload.leaguePath);
+  console.log(payload.replayPath);
+  console.log(path);
+  console.log('end');
 
   //need to start the league replay client while in the same folder otherwise it errors
-  child.addCommand('cd \"D:/Games/League of Legends/Game\"');
+  child.addCommand('cd \"' + payload.leaguePath+ '\\Game\"');
   child.addCommand('& ' + path);
   child.invoke().then((output: any) => {
     //console.log(output)
@@ -170,7 +174,7 @@ function getClips(testEventArray: any, testIndex: any, hotkey:any) {
 }).then((result:any) => {
   //after sending the recording call, the camera unlocks so we need to lock it again
   //but we cant do it immediately, because sometimes the client is still loading the new time
-  msleep(3*1000);
+  msleep(2*1000);
   //these need to be dynamic
   ks.sendKey(hotkey);
   ks.sendKey(hotkey);

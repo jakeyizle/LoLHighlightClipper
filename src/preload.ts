@@ -1,6 +1,9 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
 const homedir = require('os').homedir();
+const Store = require('electron-store');
+const store = new Store();
+const fsPre = require('electron').remote.require('fs')
 
 window.addEventListener("DOMContentLoaded", () => {
   const replaceText = (selector: string, text: string) => {
@@ -25,7 +28,7 @@ function initalizeLeaguePath() {
   }
   let possibleFilePaths = ['C:\\Program Files\\League of Legends', 'C:\\Program Files(x86)\\League of Legends', 'D:\\Program Files\\League of Legends', 'D:\\Program Files(x86)\\League of Legends']
   possibleFilePaths.forEach(filePath => {
-    if(fs.existsSync(filePath+'/Game/League of Legends.exe')) {
+    if(fsPre.existsSync(filePath+'/Game/League of Legends.exe')) {
       return filePath;
     }
   });  
@@ -36,7 +39,7 @@ function initalizeReplayPath() {
     console.log(store.get('leagueReplayPath'));
     return store.get('leagueReplayPath');
   }
-  if (fs.existsSync(homedir+'\\Documents\\League of Legends\\Replays')) {
+  if (fsPre.existsSync(homedir+'\\Documents\\League of Legends\\Replays')) {
     return homedir+'\\Documents\\League of Legends\\Replays';
   }
 }
