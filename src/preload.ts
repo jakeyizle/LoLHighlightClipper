@@ -1,8 +1,7 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
 const homedir = require('os').homedir();
-const Store = require('electron-store');
-const store = new Store();
+
 const fsPre = require('electron').remote.require('fs')
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -14,11 +13,9 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if (initalizeLeaguePath()) {
     document.getElementById('leaguePath').innerText = initalizeLeaguePath();
-    leaguePath = document.getElementById('leaguePath').innerText; 
   }
   if (initalizeReplayPath()) {
     document.getElementById('replayPath').innerText = initalizeReplayPath();
-    replayPath = document.getElementById('replayPath').innerText;
   }
 });
 

@@ -105,7 +105,7 @@ pollUntilDone(500, 30* 1000).then((result: any) =>{
     //these need to be dynamic, based on role
     //only way to focus camera, the replay API does not support camera-focusing
     var hotkey = getCameraHotkey(playerPosition.position, playerPosition.team);    
-
+    mainWindow.webContents.send('log-event', 'hotkey is: '+hotkey);    
     getClips(payload.leagueEventTimes, 0, hotkey).then((result:any) => {
       console.log("end of getclips!");
       //pretty sure league always uses port 2999. if not then this is fucked!
@@ -165,7 +165,10 @@ function msleep(n: any) {
 
 function getClips(testEventArray: any, testIndex: any, hotkey:any) { 
   function test(eventArray:any, index:any) { 
-  console.log("start of index = " + index);
+    ks.sendKey(hotkey);
+    ks.sendKey(hotkey);
+    ks.sendKey(hotkey);  
+  mainWindow.webContents.send('log-event', "start of index = " + index);
   var data = { startTime: eventArray[index].startTime, endTime: eventArray[index].endTime, recording: true};
   return fetch('https://127.0.0.1:2999/replay/recording', {
     method: 'POST',
@@ -174,19 +177,22 @@ function getClips(testEventArray: any, testIndex: any, hotkey:any) {
 }).then((result:any) => {
   //after sending the recording call, the camera unlocks so we need to lock it again
   //but we cant do it immediately, because sometimes the client is still loading the new time
-  msleep(2*1000);
+  mainWindow.webContents.send('log-event', 'before sleep');
+  msleep(6*1000);
   //these need to be dynamic
   ks.sendKey(hotkey);
   ks.sendKey(hotkey);
   ks.sendKey(hotkey);  
+  mainWindow.webContents.send('log-event', 'sent camera key: ' +hotkey);    
+  mainWindow.webContents.send('log-event', ks);    
   console.log("before sleep at index = " + index);
   //this will need to be dynamic, based off the starttime/endtime
   msleep((eventArray[index].endTime - eventArray[index].startTime+2)*1000);
   if (index < eventArray.length-1) {
-    console.log("calling the next index at index = " + index)
+    mainWindow.webContents.send('log-event', "calling the next index at index = " + index)
     return test(eventArray, index+1);
   } else {
-    console.log("ending recursion at index = " + index);
+    mainWindow.webContents.send('log-event', "ending recursion at index = " + index);
     return;
   }
 

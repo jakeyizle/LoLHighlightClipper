@@ -4,28 +4,30 @@
 const { ipcRenderer } = require('electron')
 const {dialog} = require('electron').remote;
 const fs = require('electron').remote.require('fs')
-
+const Store = require('electron-store');
+const store = new Store();
 
 var files: any;
 var fileNumber: number = 0;
 var leaguePath: string;
 var replayPath: string;
 var summonerName: string;
-var apiKey = 'RGAPI-be3eb45e-ab56-43d2-acab-4770324a97bc';
-function startReplayProcess() {
+var apiKey = 'RGAPI-d0a5ffda-1044-43a5-b325-35f4d52c4e09';
 
+function startReplayProcess() {
+    leaguePath = document.getElementById('leaguePath').innerText;    
+    replayPath = document.getElementById('replayPath').innerText;
+    summonerName = (<HTMLInputElement>document.getElementById('summonerName')).value;
     if (!validateForm()) {
         console.log('invalid form');
         console.log(leaguePath);
         console.log(replayPath);
+        console.log(summonerName);        
         return;
     }
-    leaguePath = document.getElementById('leaguePath').innerText;
-    replayPath = document.getElementById('replayPath').innerText;
-    summonerName = (<HTMLInputElement>document.getElementById('summonerName')).value;
     files = fs.readdirSync(replayPath);
     setLeagueConfig();
-
+    storePaths();
     getMatchAndStartLeague();
 }
 
@@ -86,6 +88,7 @@ function getMatchAndStartLeague() {
                 timeEventArray.push(time);    
             });
             let i = 0;
+            //if 2 events would overlap, we combine them
             while(i < timeEventArray.length-1) {
                 timeEventArray.sort((a,b)=> (a.startTime, b.startTime) ? 1: -1);
                 if (timeEventArray[i].endTime >= timeEventArray[i+1].startTime) {
@@ -122,6 +125,9 @@ ipcRenderer.on('replay-loaded', (event, payload) => {
 ipcRenderer.on('next-replay', (event, payload) => {
     getMatchAndStartLeague();
 })
+ipcRenderer.on('log-event', (event, payload) => {
+    console.log(payload);
+})
 function getParticipant(name: any, match: any) {
     return match.filter(
         function(match: any){return match.summonerName == name }
@@ -147,6 +153,14 @@ function clickReplayDialog() {
 }
 
 function setLeagueConfig() {
+    if (!fs.existsSync(leaguePath + '\\Game\\Data\\cfg\\game.cfg')) {
+        if (!fs.existsSync(leaguePath + '\\Game\\Data\\cfg')) {
+            fs.mkdirSync(leaguePath + '\\Game\\Data\\cfg');
+            console.log("copied directory");
+        }
+        fs.copyFileSync(leaguePath+'\\Config\\game.cfg', leaguePath+'\\Game\\Data\\cfg\\game.cfg');
+        console.log("copied file");
+    }
     var config:string = fs.readFileSync(leaguePath+'\\Game\\Data\\cfg\\game.cfg', 'utf8');
     if (config.indexOf('EnableReplayApi=1') === -1) {
         var newConfig = config.slice(0, 15) + 'EnableReplayApi=1\n' + config.slice(15);
@@ -162,7 +176,7 @@ function validateForm() {
     if (!validateReplayPath()) {
         valid = false;
     }
-    if ((<HTMLInputElement>document.getElementById('summonerName')).value.length == 0) {
+    if (summonerName.length == 0) {
         valid = false;
         console.log(document.getElementById('summonerName').innerText);
     }    
@@ -173,14 +187,19 @@ function validateInstallPath() {
     if (!leaguePath) {
         return false;
     }
-    return  (fs.existsSync(leaguePath + '\\Game\\League of Legends.exe') && fs.existsSync(leaguePath + '\\Game\\Data\\cfg\\game.cfg'));         
+    return (fs.existsSync(leaguePath + '\\Game\\League of Legends.exe'));         
 }
 
 function validateReplayPath() {
     if (!replayPath) {
         return false;
     }
-    return  fs.readdirSync(replayPath).length > 0;
+    return fs.readdirSync(replayPath).length > 0;
+}
+
+function storePaths() {
+    store.set('leagueInstallPath', leaguePath);
+    store.set('leagueReplayPath', replayPath);
 }
 
 interface Player {

@@ -1,13 +1,17 @@
 {
-  "name": "electron-quick-start-typescript",
+  "name": "a",
   "productName": "DOOTDOOT",
   "version": "1.0.0",
   "description": "A minimal Electron application written with Typescript",
+  "main": "./dist/main.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "tslint -c tslint.json -p tsconfig.json",
-    "start": "npm run build && electron ./dist/main.js"
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "test": "npm run build && electron ./dist/main.js"
   },
   "repository": "https://github.com/electron/electron-quick-start-typescript",
   "keywords": [
@@ -21,6 +25,11 @@
   "author": "GitHub",
   "license": "CC0-1.0",
   "devDependencies": {
+    "@electron-forge/cli": "^6.0.0-beta.51",
+    "@electron-forge/maker-deb": "^6.0.0-beta.51",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.51",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.51",
+    "@electron-forge/maker-zip": "^6.0.0-beta.51",
     "electron": "^6.0.8",
     "node-key-sender": "^1.0.11",
     "tslint": "^5.19.0",
@@ -28,15 +37,41 @@
   },
   "dependencies": {
     "async-polling": "^0.2.1",
-    "electron": "^6.0.8",
+    "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^5.2.0",
     "find-process": "^1.4.3",
     "got": "^11.3.0",
     "node-fetch": "^2.6.0",
     "node-key-sender": "^1.0.11",
     "node-powershell": "^4.0.0",
-    "node-process-windows": "0.0.2",
-    "tslint": "^5.19.0",
-    "typescript": "^3.6.0"
+    "node-process-windows": "0.0.2"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "a"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
   }
 }
